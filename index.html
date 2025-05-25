@@ -1010,46 +1010,6 @@ function translateObjectByCode(code) {
     originalLog.apply(console, args);
   };
 
-    let isDragging = false, offsetX = 0, offsetY = 0;
-
-  function startDrag(x, y) {
-    isDragging = true;
-    offsetX = x - sideConsole.offsetLeft;
-    offsetY = y - sideConsole.offsetTop;
-    document.body.style.userSelect = "none";
-  }
-
-  function doDrag(x, y) {
-    if (!isDragging) return;
-    sideConsole.style.left = (x - offsetX) + "px";
-    sideConsole.style.top = (y - offsetY) + "px";
-    sideConsole.style.right = "auto";
-  }
-
-  function stopDrag() {
-    isDragging = false;
-    document.body.style.userSelect = "";
-  }
-
-  sideConsole.addEventListener("mousedown", e => startDrag(e.clientX, e.clientY));
-  window.addEventListener("mousemove", e => doDrag(e.clientX, e.clientY));
-  window.addEventListener("mouseup", stopDrag);
-
-  sideConsole.addEventListener("touchstart", e => {
-    const touch = e.touches[0];
-    startDrag(touch.clientX, touch.clientY);
-  });
-  window.addEventListener("touchmove", e => {
-    const touch = e.touches[0];
-    doDrag(touch.clientX, touch.clientY);
-  });
-  window.addEventListener("touchend", stopDrag);
-function setActiveFrame(index) {
-  const btns = document.querySelectorAll('.frame-btn');
-  btns.forEach((btn, i) => {
-    btn.classList.toggle('active', i === index);
-  });
-}
 
 const toDataURL = (img) => {
   const tempCanvas = document.createElement('canvas');

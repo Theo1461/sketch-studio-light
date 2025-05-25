@@ -1,15 +1,15 @@
 {
-  "name": "Point Dynamics(a)",
-  "short_name": "(a)",
-  "start_url": "./PointDynamicsPrv.html",
+  "name": "Sketch Studio Light",
+  "short_name": "SStudio",
+  "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#FDFAF4",
-  "theme_color": "#FDFAF4",
+  "background_color": "#2d2f34",
+  "theme_color": "#2d2f34",
   "icons": [
     {
-      "src": "R.png",
+      "src": "studio.jpg",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/jpg"
     }
   ]
 }

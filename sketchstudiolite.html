@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sketch Studio Light</title>
+<style>
+  body, html {
+    background: #2d2f34;
+    color: white;
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    height: 100%;
+    margin: 0;
+    font-weight: bold;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
+    touch-action: none;
+  }
+
+  h4, h3, h2, h1 {
+    text-align: center;
+  }
+
+  #downloadLink {
+    display: none;
+    background-color: #007bff;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 3px 6px rgba(0,123,255,0.5);
+    transition: background-color 0.3s ease;
+  }
+
+  #downloadLink:hover {
+    background-color: #0056b3;
+  }
+
+  canvas {
+    background: #3c4048;
+    cursor: pointer;
+    border: 1px solid #000000;
+    border-radius: 8px;
+  }
+
+  button, input[type="file"], input[type="number"], .file-btn {
+    border: 1px solid #000000;
+    background-color: #5b5f65;
+    color: white;
+    padding: 8px 12px;
+    font-size: 16px;
+    border-radius: 4px;
+    width: 150px;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    margin: 5px 0;
+  }
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .side-panel button {
+    background-color: #5b5f65;
+    border: 1px solid #000000;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    font-size: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  }
+
+  .side-panel span {
+    color: #aaa;
+    font-size: 14px;
+    min-width: 80px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #frames {
+    border: 1px solid #000000;
+    border-radius: 8px;
+    margin-top: 10px;
+    height: 75px;
+    max-width: 300px;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .frame-btn {
+    background: #444;
+        border: 1px solid #000000;
+    border-radius: 8px;
+    border: none;
+    color: white;
+    margin-right: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+
+  .frame-btn.active {
+    background: #0f0;
+  }
+
+  #version {
+    position: fixed;
+    bottom: 5px;
+    right: 10px;
+    font-size: 12px;
+    color: #888888;
+    user-select: none;
+    font-weight: 500;
+    font-family: Arial, sans-serif;
+  }
+  #sideConsole {
+    position: fixed;
+    left: 10px;
+    width: 265px;
+    border-radius: 10px;
+    border: 1px solid #000000;
+    height: 150px;
+    overflow-y: auto;
+    background: #41464b;
+    color: #0f0;
+    font-family: monospace;
+    font-size: 12px;
+    padding: 10px;
+    z-index: 9999;
+    cursor: move;
+    touch-action: none
+  }
+  #hintBox {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    opacity: 0;
+    max-width: 400px;
+    transition: opacity 0.5s;
+    z-index: 10000000000000000000000000000000000000000000000000000000000000;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div id="hintBox"></div>
+<h3>Sketch Studio Light</h3>
+
+<div style="display: flex; gap: 20px; align-items: flex-start; justify-content: center;">
+
+  <div class="side-panel" style="left: 10px">
+    <div>
+  <label>
+    <input style="border: 1px solid #000000;"type="radio" name="objType" value="shape" checked> Shape
+  </label>
+  <label>
+    <input style="border: 1px solid #000000;"type="radio" name="objType" value="text"> Text
+  </label>
+</div>
+<button style="border: 1px solid #000000;"id="addObjectBtn">Add Object</button>
+<button style="border: 1px solid #000000;"id="saveFrame">Save Frame</button>
+<button style="border: 1px solid #000000;"id="saveProjectBtn">Export Project</button>
+<input type="file" id="loadSktcsBtn" accept=".sks,.sktcs" style="display:none" />
+<button style="border: 1px solid #000000;"id="loadBtn">Load Project</button>
+<div id="sideConsole"></div>
+</div>
+
+  <div style="text-align: center;">
+    <canvas id="canvas" width="500" height="500"></canvas>
+  </div>
+  <div class="side-panel">
+    <button style="border: 1px solid #000000;" id="playAnim">▶ (Play)</button>
+    <button style="border: 1px solid #000000;"id="stopAnim" disabled>▐▐ (Pause)</button>
+    <button style="border: 1px solid #000000;"id="startRecord">⬤ (Record)</button>
+    <button style="border: 1px solid #000000;"id="stopRecord" disabled>□ (Stop Rec)</button>
+        <div id="frames">
+            <h4>Frames</h4>
+        </div> 
+</div>
+
+    </div>
+  </div>
+
+</div>
+<div class="bottom-upload-controls" style="display: block; position: absolute; padding: 15px; left: 20vw; border: 1px solid #000000;
+    border-radius: 8px; bottom: 0px; background: #2f3537;">
+  <label for="bgUpload" class="file-btn" style="cursor: pointer; color: #dbdbdb;">Change Background</label>
+  <input type="file" id="bgUpload" accept="image/*" style="display: none;" />
+  <span id="bgFileName" style="color: #dbdbdb; font-size: 14px; min-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span>
+  <label for="imgInput" class="file-btn" style="cursor: pointer; color: #dbdbdb;">Change Object</label>
+  <input type="file" id="imgInput" accept="image/*" style="display: none;" />
+  <span id="imgFileName" style="color: #dbdbdb; font-size: 14px; min-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span>
+  <button style="color: #dbdbdb;"id="cycleBtn">Cycle</button>
+  <input id="zIndexMobileInput" type="number" placeholder="Z-index" style="display:none;" />
+  <input id="textEditor" type="text" placeholder="Edit text..." style="display:none; position:absolute;">
+          <a id="downloadLink" style="display:none"></a>
+
+
+</div>
+
+
+  <div id="version">v2.1</div>
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.4/dist/ffmpeg.min.js"></script>
+<script>
+const hints = [
+    "Did you know you can export projects?",
+    "Exported projects end in .sks or .json!",
+    "Use the built-in console to view data.",
+    "Touch and mouse support are built-in!",
+    "Spice things up by changing the background!",
+    "Did you know you can import your own images?",
+    "Remember, only one object at a time!",
+    "Use (Cycle) to cycle through all objects.",
+    "Add text to your project by selecting text when adding a new object.",
+    "Need help? Try hovering over buttons!",
+    "Press the record button before pressing play in order to download the video!"
+  ];
+
+  const hintBox = document.getElementById("hintBox");
+  let hintIndex = 0;
+
+  function showNextHint() {
+    hintBox.style.opacity = 0;
+
+    setTimeout(() => {
+      hintBox.textContent = hints[hintIndex];
+      hintBox.style.opacity = 1;
+      hintIndex = Math.floor(Math.random() * hints.length);
+    }, 500);
+  }
+
+  showNextHint();
+  setInterval(showNextHint, 8000);
+const textEditor = document.getElementById('textEditor');
+
+const objects = [];
+
+let animPlaying = false;
+let animSpeed = 0.02;
+let recorder;
+let recordedChunks = [];
+document.getElementById('loadBtn').addEventListener('click', () => {
+  document.getElementById('loadSktcsBtn').click();
+});
+
+document.getElementById('loadSktcsBtn').addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const validExtensions = ['.sktcs', '.sks', '.json'];
+  const fileName = file.name.toLowerCase();
+
+  const isValid = validExtensions.some(ext => fileName.endsWith(ext));
+  if (!isValid) {
+    alert('Please select a valid .sktcs, .sks, or .json file');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      console.log('Loaded project data:', data);
+
+      if (data.objects) {
+        objects.length = 0;
+        data.objects.forEach(obj => {
+          const newObj = {
+            x: obj.x || 0,
+            y: obj.y || 0,
+            size: obj.size || 40,
+            color: obj.color || '#000',
+            selected: false,
+            flip: obj.flip || false,
+            opacity: obj.opacity !== undefined ? obj.opacity : 1,
+            rotation: obj.rotation || 0,
+            type: obj.type || 'obj',
+            text: obj.text || '',
+            img: obj.img || null,
+            width: obj.width || obj.size || 40,
+            height: obj.height || obj.size || 40,
+            id: obj.id || Math.random().toString(36).substr(2, 9),
+            code: '',
+            name: obj.name || 'Untitled'
+          };
+          objects.push(newObj);
+        });
+      }
+
+      if (data.frames) {
+        frames.length = 0;
+        data.frames.forEach(f => frames.push(f));
+      }
+
+      if (data.backgroundImage) {
+        const img = new Image();
+        img.onload = () => {
+          backgroundImg = img;
+          draw();
+        };
+        img.src = data.backgroundImage;
+      } else {
+        backgroundImg = null;
+        draw();
+      }
+
+      alert('File loaded successfully!');
+    } catch (err) {
+      alert('Failed to load file: ' + err.message);
+    }
+  };
+
+  reader.readAsText(file);
+    event.target.value = '';
+});
+
+
+  document.getElementById('bgUpload').addEventListener('change', function () {
+    document.getElementById('bgFileName').textContent = this.files[0]?.name || '';
+  });
+
+  document.getElementById('imgInput').addEventListener('change', function () {
+    document.getElementById('imgFileName').textContent = this.files[0]?.name || '';
+  });
+(() => {
+  let backgroundImg = null;
+function drawObjects() {
+  for (const obj of objects) {
+    ctx.save();
+    ctx.globalAlpha = obj.opacity !== undefined ? obj.opacity : 1;
+
+    const centerX = obj.x + (obj.img ? obj.width / 2 : obj.size / 2);
+    const centerY = obj.y + (obj.img ? obj.height / 2 : obj.size / 2);
+    ctx.translate(centerX, centerY);
+
+    const angle = (obj.rotation || 0) * Math.PI / 180;
+    ctx.rotate(angle);
+const radius = 8;
+    const scaleX = obj.flip ? -1 : 1;
+    ctx.scale(scaleX, 1);
+
+    if (obj.type === 'text') {
+      ctx.fillStyle = obj.color;
+      ctx.font = `${obj.size}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(obj.text || '', 0, 0);
+    } else if (obj.img) {
+      ctx.drawImage(obj.img, -obj.width / 2, -obj.height / 2, obj.width, obj.height);
+    } else {
+      ctx.fillStyle = obj.color || '#0f0';
+      const size = obj.size || 50;
+drawRoundedRect(ctx, -size / 2, -size / 2, size, size, radius);
+      
+    }
+
+    ctx.restore();
+
+    if (obj.selected) {
+      ctx.strokeStyle = 'yellow';
+      ctx.lineWidth = 3;
+      const w = obj.img ? obj.width : (obj.type === 'text' ? ctx.measureText(obj.text || '').width : obj.size);
+      const h = obj.img ? obj.height : (obj.type === 'text' ? obj.size : obj.size);
+      ctx.strokeRect(obj.x, obj.y, w, h);
+    }
+  }
+}
+
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (backgroundImg) {
+    ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+  }
+}
+
+function canvas1(){
+        if (backgroundImg) {
+    ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+  }
+}
+  function draw() {
+
+    clearCanvas();
+    drawObjects();
+
+  }
+  function generateUniqueCode(index) {
+  if (index === 0) return "174eu";
+  const digits = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+  const letters = String.fromCharCode(
+    97 + Math.floor(Math.random() * 26),
+    97 + Math.floor(Math.random() * 26)
+  );
+  return digits + letters;
+}
+
+document.getElementById('bgUpload').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const img = new Image();
+  img.onload = () => {
+    backgroundImg = img;
+      canvas1()
+  };
+
+  img.src = URL.createObjectURL(file);
+});
+
+const canvas = document.getElementById('canvas');
+canvas.width = 400;
+canvas.height = 400;
+
+  const ctx = canvas.getContext('2d');
+document.getElementById('addObjectBtn').addEventListener('click', () => {
+  const selectedType = document.querySelector('input[name="objType"]:checked').value;
+   const low = 64;
+  const high = 255;
+
+  const r = Math.random() < 0.5 ? low : high;
+  const g = Math.random() < 0.5 ? low : high;
+  const b = Math.random() < 0.5 ? low : high;
+  const step = 128;
+  const newObj = {
+    x: 50,
+    y: 50,
+    size: 40,
+color: '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join(''),
+    selected: false,
+    flip: false,
+    opacity: 1,
+    rotation: 90,
+    code: generateUniqueCode(objects.length),
+    type: selectedType,
+    text: selectedType === 'text' ? 'Enter Text' : null
+  };
+
+  objects.push(newObj);
+  draw();
+});
+
+let selectedObjectIndex = -1;
+let zIndexInput = ''; 
+const cycleBtn = document.getElementById('cycleBtn');
+const zIndexMobileInput = document.getElementById('zIndexMobileInput');
+
+  zIndexMobileInput.style.display = 'inline-block';
+cycleBtn.addEventListener('click', () => {
+  if (objects.length === 0) return;
+  if (selectedObjectIndex >= 0) objects[selectedObjectIndex].selected = false;
+
+  selectedObjectIndex = (selectedObjectIndex + 1) % objects.length;
+  objects[selectedObjectIndex].selected = true;
+  updateTextEditor();
+  zIndexInput = '';
+  console.log('Selected object:', selectedObjectIndex, objects[selectedObjectIndex]);
+    updateTextEditor();
+  draw()
+});
+
+zIndexMobileInput.addEventListener('change', (e) => {
+  const val = parseInt(e.target.value, 10);
+  if (!isNaN(val) && selectedObjectIndex !== -1) {
+    const clampedIndex = Math.min(Math.max(val, 0), objects.length - 1);
+    const [obj] = objects.splice(selectedObjectIndex, 1);
+    objects.splice(clampedIndex, 0, obj);
+    selectedObjectIndex = clampedIndex;
+
+    for (let i = 0; i < objects.length; i++) {
+      objects[i].selected = (i === selectedObjectIndex);
+    }
+
+    console.log(`Moved object to z-index ${clampedIndex}`, obj);
+    e.target.value = '';
+  }
+});
+
+
+function imageToDataURL(img) {
+  if (!img) return null;
+  const offscreen = document.createElement('canvas');
+  offscreen.width = img.width;
+  offscreen.height = img.height;
+  const ctxOff = offscreen.getContext('2d');
+  ctxOff.drawImage(img, 0, 0);
+  return offscreen.toDataURL();
+}
+
+function serializeObjects(objects) {
+  return objects.map(obj => ({
+    ...obj,
+    opacity: obj.opacity !== undefined ? obj.opacity : 1,
+    rotation: obj.rotation || 0
+  }));
+}
+function serializeFrames(frames) {
+  return frames.map(frame => ({
+    ...frame,
+    opacity: frame.opacity !== undefined ? frame.opacity : 1,
+    rotation: frame.rotation || 0
+  }));
+}
+
+function serializeBackgroundImage(img) {
+  return img ? imageToDataURL(img) : null;
+}
+document.getElementById('saveProjectBtn').addEventListener('click', () => {
+  const projectData = {
+    objects: serializeObjects(objects).map(obj => ({
+      ...obj,
+      text: obj.type === 'text' ? obj.text || '' : undefined,
+      type: obj.type,
+      img: obj.img ? obj.img.src : null,
+      width: obj.width,
+      height: obj.height,
+      id: obj.id,
+      code: obj.code,
+      name: obj.name
+    })),
+    frames: serializeFrames(frames),
+    backgroundImage: serializeBackgroundImage(backgroundImg),
+    animPlaying,
+    animSpeed,
+    canvasWidth: canvas.width,
+    canvasHeight: canvas.height
+  };
+
+  const jsonStr = JSON.stringify(projectData, null, 2);
+  const blob = new Blob([jsonStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'project.sks';
+  a.click();
+
+  URL.revokeObjectURL(url);
+});
+
+
+document.getElementById('startRecord').onclick = () => {
+  recordedChunks = [];
+  const stream = canvas.captureStream(60);
+
+  recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+
+  recorder.ondataavailable = e => {
+    if (e.data.size > 0) recordedChunks.push(e.data);
+  };
+
+  recorder.onstop = () => {
+    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    const downloadLink = document.getElementById('downloadLink');
+    downloadLink.href = url;
+    downloadLink.download = 'projection.webm';
+    downloadLink.style.display = 'inline';
+    downloadLink.textContent = 'Export';
+  };
+
+  recorder.start();
+
+  document.getElementById('startRecord').disabled = true;
+  document.getElementById('stopRecord').disabled = false;
+};
+
+document.getElementById('stopRecord').onclick = () => {
+  recorder.stop();
+  document.getElementById('startRecord').disabled = false;
+  document.getElementById('stopRecord').disabled = true;
+};
+canvas.addEventListener('click', (e) => {
+  if (animPlaying) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  let clicked = false;
+
+  for (let i = objects.length - 1; i >= 0; i--) {
+    const obj = objects[i];
+    const w = obj.img ? obj.width : obj.size;
+    const h = obj.img ? obj.height : obj.size;
+
+    if (
+      mx >= obj.x &&
+      mx <= obj.x + w &&
+      my >= obj.y &&
+      my <= obj.y + h
+    ) {
+      obj.selected = !obj.selected;
+      clicked = true;
+      break;
+    }
+  }
+  if (!clicked) {
+    for (const obj of objects) {
+      obj.selected = false;
+    }
+  }
+
+  draw();
+});
+let lastTapTime = 0;
+
+canvas.addEventListener('dblclick', (e) => {
+  if (animPlaying) return;
+  handleDoubleEdit(e.clientX, e.clientY);
+});
+
+canvas.addEventListener('touchend', (e) => {
+  const currentTime = new Date().getTime();
+  if (currentTime - lastTapTime < 300) {
+    const touch = e.changedTouches[0];
+    handleDoubleEdit(touch.clientX, touch.clientY);
+  }
+  lastTapTime = currentTime;
+});
+
+function handleDoubleEdit(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const mx = clientX - rect.left;
+  const my = clientY - rect.top;
+
+  for (let i = objects.length - 1; i >= 0; i--) {
+    const obj = objects[i];
+    const w = obj.img ? obj.width : obj.size;
+    const h = obj.img ? obj.height : obj.size;
+
+    if (mx >= obj.x && mx <= obj.x + w && my >= obj.y && my <= obj.y + h) {
+      const input = prompt(
+        'Press Enter to delete, or type:\n' +
+        '"resize" to change size,\n' +
+        '"rotate" to change rotation angle,\n' +
+        '"opacity" to change opacity (0 to 1),\n' +
+        '"nothing" to exit'
+      );
+      const action = input ? input.trim().toLowerCase() : '';
+
+      if (action === '' || action === 'delete') {
+        objects.splice(i, 1);
+        draw();
+      } else if (action === 'resize') {
+        const newWidth = parseInt(prompt('Enter new width:', obj.width || obj.size), 10);
+        const newHeight = parseInt(prompt('Enter new height:', obj.height || obj.size), 10);
+        if (!isNaN(newWidth) && !isNaN(newHeight)) {
+          if (obj.img) {
+            obj.width = newWidth;
+            obj.height = newHeight;
+          } else {
+            obj.size = Math.max(newWidth, newHeight);
+          }
+          draw();
+        }
+      } else if (action === 'rotate') {
+        const newAngle = parseFloat(prompt('Enter rotation angle in degrees:', obj.rotation || 0));
+        if (!isNaN(newAngle)) {
+          obj.rotation = newAngle;
+          draw();
+        }
+      } else if (action === 'opacity') {
+        const newOpacity = parseFloat(prompt('Enter opacity (0 to 1):', obj.opacity ?? 1));
+        if (!isNaN(newOpacity) && newOpacity >= 0 && newOpacity <= 1) {
+          obj.opacity = newOpacity;
+          draw();
+        }
+      } else if (action === 'nothing') {
+        draw();
+      }
+      break;
+    }
+  }
+}
+
+window.addEventListener('keydown', (e) => {
+  if (animPlaying) return;
+  const selectedObj = objects.find(o => o.selected);
+  if (!selectedObj) return;
+
+  switch (e.key) {
+    case 'ArrowUp':
+      selectedObj.y = Math.max(0, selectedObj.y - 5);
+      e.preventDefault();
+      break;
+    case 'ArrowDown':
+      selectedObj.y = Math.min(canvas.height - (selectedObj.img ? selectedObj.height : selectedObj.size), selectedObj.y + 5);
+      e.preventDefault();
+      break;
+    case 'ArrowLeft':
+      selectedObj.x = Math.max(0, selectedObj.x - 5);
+      e.preventDefault();
+      break;
+    case 'ArrowRight':
+      selectedObj.x = Math.min(canvas.width - (selectedObj.img ? selectedObj.width : selectedObj.size), selectedObj.x + 5);
+      e.preventDefault();
+      break;
+  }
+  draw();
+});
+
+
+let draggingObj = null;
+let dragOffsetX = 0;
+let dragOffsetY = 0;
+
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  const selectedObj = objects.find(o => o.selected);
+  if (selectedObj &&
+      mx >= selectedObj.x && mx <= selectedObj.x + (selectedObj.width || selectedObj.size) &&
+      my >= selectedObj.y && my <= selectedObj.y + (selectedObj.height || selectedObj.size)) {
+    draggingObj = selectedObj;
+    dragOffsetX = mx - selectedObj.x;
+    dragOffsetY = my - selectedObj.y;
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (!draggingObj) return;
+  const rect = canvas.getBoundingClientRect();
+  draggingObj.x = e.clientX - rect.left - dragOffsetX;
+  draggingObj.y = e.clientY - rect.top - dragOffsetY;
+  draw();
+});
+
+canvas.addEventListener('mouseup', () => draggingObj = null);
+canvas.addEventListener('mouseleave', () => draggingObj = null);
+
+canvas.addEventListener('touchstart', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  const mx = touch.clientX - rect.left;
+  const my = touch.clientY - rect.top;
+
+  const selectedObj = objects.find(o => o.selected);
+  if (selectedObj &&
+      mx >= selectedObj.x && mx <= selectedObj.x + (selectedObj.width || selectedObj.size) &&
+      my >= selectedObj.y && my <= selectedObj.y + (selectedObj.height || selectedObj.size)) {
+    draggingObj = selectedObj;
+    dragOffsetX = mx - selectedObj.x;
+    dragOffsetY = my - selectedObj.y;
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+  if (!draggingObj) return;
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  draggingObj.x = touch.clientX - rect.left - dragOffsetX;
+  draggingObj.y = touch.clientY - rect.top - dragOffsetY;
+  draw();
+}, { passive: false });
+
+function updateTextEditor() {
+  const obj = objects[selectedObjectIndex];
+  if (obj && obj.type === 'text') {
+    textEditor.style.display = 'block';
+    textEditor.value = obj.text || '';
+    textEditor.style.left = (obj.x + 10) + 'px';
+    textEditor.style.top = (obj.y + 10) + 'px';
+  } else {
+    textEditor.style.display = 'none';
+  }
+}
+textEditor.addEventListener('input', () => {
+  if (selectedObjectIndex !== null && objects[selectedObjectIndex].type === 'text') {
+    objects[selectedObjectIndex].text = textEditor.value;
+    draw();
+  }
+});
+
+canvas.addEventListener('touchend', () => draggingObj = null);
+
+document.getElementById('saveFrame').addEventListener('click', () => {
+  const dur = frames.length === 0 ? 0 : 10;
+  objects.forEach((object, index) => {
+    if (object.selected) {
+      frames.push({
+        objectIndex: index,
+        x: object.x,
+        y: object.y,
+        duration: dur,
+        width: object.width,
+        height: object.height,
+        flip: object.flip,
+        opacity: object.opacity ?? 1, 
+        rotation: object.rotation ?? 0,   
+        imgDataUrl: object.img ? toDataURL(object.img) : null
+      });
+    }
+  });
+  updateFramesUI();
+});
+function drawRoundedRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+  ctx.fill();
+}
+
+document.getElementById('playAnim').addEventListener('click', () => {
+  if (frames.length < 2) {
+    alert('Please save at least 2 frames to play animation.');
+    return;
+  }
+  draw();
+  animPlaying = true;
+  animIndex = 0;
+  animProgress = 0;
+  const frame = frames[0];
+const obj = objects[frame.objectIndex];
+
+  objects.forEach(obj => obj.selected = false);
+  document.getElementById('playAnim').disabled = true;
+  document.getElementById('stopAnim').disabled = false;
+  translateObjectByCode();
+});
+
+document.getElementById('stopAnim').addEventListener('click', () => {
+  animPlaying = false;
+  document.getElementById('playAnim').disabled = false;
+  document.getElementById('stopAnim').disabled = true;
+  draw();
+});
+
+const imgInput = document.getElementById('imgInput');
+imgInput.addEventListener('change', (e) => {
+  if (animPlaying) return;
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    objects.forEach(obj => {
+      if (obj.selected) {
+        obj.img = img;
+        obj.width = img.width > 100 ? 100 : img.width;
+        obj.height = img.height > 100 ? 100 : img.height;
+        obj.x = Math.min(obj.x, canvas.width - obj.width);
+        obj.y = Math.min(obj.y, canvas.height - obj.height);
+      }
+    });
+    draw();
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+});
+
+  const framesContainer = document.getElementById('frames');
+function updateFramesUI() {
+  framesContainer.innerHTML = '';
+  frames.forEach((frame, i) => {
+    const btn = document.createElement('button');
+    btn.classList.add('frame-btn');
+    btn.textContent = `Frame ${i + 1}`;
+    if (frame.duration !== undefined && i > 0) {
+      btn.title = `Duration to this frame: ${frame.duration} steps\nClick to change duration`;
+    } else {
+      btn.title = 'First frame';
+    }
+    btn.addEventListener('click', () => {
+      if (animPlaying) return;
+      if (i > 0) {
+        const newDur = prompt('Set duration (number of steps) to reach this frame:', frames[i].duration);
+        if (newDur !== null) {
+          const durNum = parseInt(newDur);
+          if (!isNaN(durNum) && durNum >= 1) {
+            frames[i].duration = durNum;
+            updateFramesUI();
+          } else {
+            alert('Please enter a valid positive number.');
+          }
+        }
+      }
+const obj = objects[frame.objectIndex];
+if (!obj) return;
+
+obj.x = frame.x;
+obj.y = frame.y;
+obj.width = frame.width || obj.width;
+obj.height = frame.height || obj.height;
+obj.flip = frame.flip || false;
+obj.opacity = frame.opacity !== undefined ? frame.opacity : obj.opacity ?? 1;    
+obj.rotation = frame.rotation !== undefined ? frame.rotation : obj.rotation ?? 0;
+
+if(frame.imgDataUrl){
+  const img = new Image();
+  img.onload = () => {
+    obj.img = img;
+    draw();
+  };
+  img.src = frame.imgDataUrl;
+} else {
+  draw();
+}
+
+      if(frame.imgDataUrl){
+        const img = new Image();
+        img.onload = () => {
+          objects.img = img;
+          draw();
+        };
+        img.src = frame.imgDataUrl;
+      } else {
+        draw();
+      }
+      setActiveFrame(i);
+    });
+    framesContainer.appendChild(btn);
+  });
+}
+const frames = [];
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
+function translateObjectByCode(code) {
+  const matchingFrames = frames.filter(f => f.code === code);
+
+  if (matchingFrames.length < 2) {
+    console.warn(`Not enough frames for code "${code}"`);
+    return;
+  }
+
+  const objectIndex = matchingFrames[0].objectIndex;
+  const obj = objects[objectIndex];
+  if (!obj) {
+    console.warn(`No object found at index ${objectIndex}`);
+    return;
+  }
+
+  matchingFrames.sort((a, b) => frames.indexOf(a) - frames.indexOf(b));
+
+  let i = 0;
+  let t = 0;
+
+  function animateStep() {
+    if (i >= matchingFrames.length - 1) return;
+
+    const f1 = matchingFrames[i];
+    const f2 = matchingFrames[i + 1];
+
+    obj.x = lerp(f1.x, f2.x, t);
+    obj.y = lerp(f1.y, f2.y, t);
+    obj.width = lerp(f1.width ?? obj.width, f2.width ?? obj.width, t);
+    obj.height = lerp(f1.height ?? obj.height, f2.height ?? obj.height, t);
+    obj.opacity = lerp(f1.opacity ?? 1, f2.opacity ?? 1, t);
+    obj.rotation = lerp(f1.rotation ?? 0, f2.rotation ?? 0, t);
+
+    draw();
+
+    t += 0.02;
+    if (t >= 1) {
+      t = 0;
+      i++;
+    }
+
+    requestAnimationFrame(animateStep);
+  }
+
+  animateStep();
+}
+
+  const sideConsole = document.getElementById("sideConsole");
+
+  const originalLog = console.log;
+
+  console.log = function (...args) {
+    const msg = args.map(arg => {
+      try {
+        return typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg);
+      } catch (e) {
+        return "[Unserializable Object]";
+      }
+    }).join(' ');
+
+    const line = document.createElement("div");
+    line.textContent = msg;
+    sideConsole.appendChild(line);
+
+    sideConsole.scrollTop = sideConsole.scrollHeight;
+
+    originalLog.apply(console, args);
+  };
+
+    let isDragging = false, offsetX = 0, offsetY = 0;
+
+  function startDrag(x, y) {
+    isDragging = true;
+    offsetX = x - sideConsole.offsetLeft;
+    offsetY = y - sideConsole.offsetTop;
+    document.body.style.userSelect = "none";
+  }
+
+  function doDrag(x, y) {
+    if (!isDragging) return;
+    sideConsole.style.left = (x - offsetX) + "px";
+    sideConsole.style.top = (y - offsetY) + "px";
+    sideConsole.style.right = "auto";
+  }
+
+  function stopDrag() {
+    isDragging = false;
+    document.body.style.userSelect = "";
+  }
+
+  sideConsole.addEventListener("mousedown", e => startDrag(e.clientX, e.clientY));
+  window.addEventListener("mousemove", e => doDrag(e.clientX, e.clientY));
+  window.addEventListener("mouseup", stopDrag);
+
+  sideConsole.addEventListener("touchstart", e => {
+    const touch = e.touches[0];
+    startDrag(touch.clientX, touch.clientY);
+  });
+  window.addEventListener("touchmove", e => {
+    const touch = e.touches[0];
+    doDrag(touch.clientX, touch.clientY);
+  });
+  window.addEventListener("touchend", stopDrag);
+function setActiveFrame(index) {
+  const btns = document.querySelectorAll('.frame-btn');
+  btns.forEach((btn, i) => {
+    btn.classList.toggle('active', i === index);
+  });
+}
+
+const toDataURL = (img) => {
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = img.width;
+  tempCanvas.height = img.height;
+  const ctx = tempCanvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  return tempCanvas.toDataURL();
+};
+
+  draw();
+
+
+})();
+  function isIOSorIPadOS() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+
+    if (isIOSorIPadOS()) {
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = '/manifest.json';
+      document.head.appendChild(link);
+
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/serviceWorker.js')
+            .then(reg => console.log('Service Worker registered:', reg))
+            .catch(err => console.warn('Service Worker failed:', err));
+        });
+      }
+    }
+</script>
+</body>
+</html>

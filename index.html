@@ -630,7 +630,28 @@ canvas.addEventListener("touchcancel", e => {
       editRotation.value = obj.rotation || 0;
       showEditPanel(obj, rect.left + obj.orx, rect.top + obj.ory);
     }
-  });applyEditBtn.addEventListener("click", () => {
+  });
+  let lastTapTime = 0;
+
+canvas.addEventListener("touchend", e => {
+  const currentTime = new Date().getTime();
+  const tapLength = currentTime - lastTapTime;
+  if (tapLength < 300 && tapLength > 0) {
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.changedTouches[0];
+    const touchX = touch.clientX - rect.left;
+    const touchY = touch.clientY - rect.top;
+    const obj = findObjectAt(touchX, touchY);
+    if (obj && !animPlaying) {
+      currentEditObj = obj;
+      editRotation.value = obj.rotation || 0;
+      showEditPanel(obj, rect.left + obj.orx, rect.top + obj.ory);
+    }
+  }
+  lastTapTime = currentTime;
+  draggingObj = null;
+});
+applyEditBtn.addEventListener("click", () => {
   if (!currentEditObj) return;
 
   const editTarget = currentEditObj;

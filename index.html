@@ -254,7 +254,9 @@
 
 <div id="version">v2.3</div>
 <link rel="manifest" href="manifest.json" />
-<script>
+  <meta name="theme-color" content="#222" />
+  <link rel="icon" href="icon.jpg"/>
+  <script>
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js')
       .then(reg => console.log('Service Worker registered:', reg.scope))

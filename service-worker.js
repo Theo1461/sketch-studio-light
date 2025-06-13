@@ -1,16 +1,22 @@
-self.addEventListener('install', (e) => {
+self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open('game-cache').then((cache) => {
-      return cache.addAll(['index.html']);
+    caches.open('v2.3').then(cache => {
+      return cache.addAll([
+        './',
+        './index.html',
+        './style.css',
+        './script.js',
+        './manifest.json',
+        './icon.png',
+      ]);
     })
   );
 });
 
-self.addEventListener('fetch', (e) => {
+self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then((response) => {
+    caches.match(e.request).then(response => {
       return response || fetch(e.request);
     })
   );
 });
-notifyPoints(35000);

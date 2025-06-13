@@ -218,30 +218,48 @@
 
   <div class="side-panel">
     <input type="file" id="bgFileInput" accept="image/*" style="display:none" onchange="loadBGFromFile(event)">
-    <button onclick="document.getElementById('bgFileInput').click()">Upload BG Image</button>
+    <button onclick="document.getElementById('bgFileInput').click()">Change ⌗ Background</button>
 
-    <button id="playAnimBtn">Play Animation</button>
-    <button id="stopAnimBtn" disabled>Stop Animation</button>
+    <button id="playAnimBtn">› (Play Animation)</button>
+    <button id="stopAnimBtn" disabled>■ (Stop Animation)</button>
 
-    <button id="startRecord">⯀ (Record)</button>
-    <button id="stopRecord" disabled>□ (Stop Rec)</button>
-    <button onclick="c()">Cycle</button>
+    <button id="startRecord">● (Record)</button>
+    <button id="stopRecord" disabled>▧ (Stop Rec)</button>
+    <button onclick="c()">⟳ycle</button>
     <div id="editPanel">
-  <label>Z-Index: <input type="number" id="editZIndex"></label>
-  <label>Width: <input type="number" id="editWidth"></label>
+  <label>Layer: <input type="number" id="editZIndex"></label>
+  <label>Length: <input type="number" id="editWidth"></label>
   <label>Height: <input type="number" id="editHeight"></label>
-  <label>Rotation (degrees): <input type="number" id="editRotation" value="0"></label>
+  <label>Rotation (°): <input type="number" id="editRotation" value="0"></label>
+  <input id="editOcInput" type="number" step="0.01" min="0" max="1">
   <label>Image: <input type="file" id="editImgInput" accept="image/*"></label>
   <button id="applyEdit">Apply</button>
   <button id="cancelEdit" onclick="hideEditPanel()">Cancel</button>
 </div>
-  </div>
+<div id="frameTimeline" style="display:flex; gap:8px; overflow-x:auto; padding:10px; border:1px solid #808080; border-radius: 5px;"></div>
+
+<div id="frameEditor" style="display:none; position:absolute; background:#777; padding:10px; border:1px solid #999; border-radius:6px;">
+  <label>
+    Duration (ms): <input type="number" id="frameDurationInput" min="100" step="100" />
+  </label>
+  <br />
+  <button id="frameDeleteBtn">▣ Delete</button>
+  <button id="frameMoveLeftBtn">▯Move Left</button>
+  <button id="frameMoveRightBtn">Move Right▯</button>
+  <button id="frameCloseBtn">⨂ Close</button>
+</div>
+
 
 </div>
 
 <div id="version">v2.2</div>
-
+<link rel="manifest" href="manifest.json" />
 <script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(reg => console.log('Service Worker registered:', reg.scope))
+      .catch(err => console.error('Service Worker registration failed:', err));
+  }
   let selectedIndex = -1;
 
   const canvas = document.getElementById("canvas");
@@ -251,6 +269,8 @@
   const editWidth = document.getElementById("editWidth");
   const editHeight = document.getElementById("editHeight");
   const editImgInput = document.getElementById("editImgInput");
+  const editOcInput = document.getElementById('editOcInput');
+
   const applyEditBtn = document.getElementById("applyEdit");
   const cancelEditBtn = document.getElementById("cancelEdit");
 
@@ -259,6 +279,7 @@
   const addSymbolBtn = document.getElementById("addSymbolBtn");
   const playAnimBtn = document.getElementById("playAnimBtn");
   const stopAnimBtn = document.getElementById("stopAnimBtn");
+
 
   let bgColor = "white";
   let bgImage = null;
@@ -324,6 +345,7 @@ window.addEventListener('keydown', e => {
       font: o.font,
       width: o.width,
       height: o.height,
+      oc: o.oc,
       z: o.z,
       img: o.img,
       orx: o.orx,
@@ -341,50 +363,58 @@ window.addEventListener('keydown', e => {
   function findObjByCode(frame, code) {
     return frame.find(o => o.code === code);
   }
+function drawObjects(objects = testObjects) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  function drawObjects(objects = testObjects) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (bgImage) {
+  ctx.save();
+  ctx.globalAlpha = 1;
+  if (bgImage) {
     ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
   } else {
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
   }
+  ctx.restore();
 
-    const sorted = [...objects].sort((a, b) => a.z - b.z);
-    for (const obj of sorted) {
-      
-      if (obj.imgElement) {
-        ctx.drawImage(obj.imgElement, obj.orx, obj.ory, obj.width, obj.height);
-        ctx.rotate((obj.rotation || 0) * Math.PI / 180);
-      } else if (obj.type === "txt") {
-        ctx.fillStyle = obj.color;
-        ctx.font = `${obj.height}px ${obj.font}`;
-        ctx.fillText(obj.text, obj.orx, obj.ory + obj.height);
-      } else {
-        ctx.fillStyle = obj.color;
-            ctx.rotate((obj.rotation || 0) * Math.PI / 180);
-        ctx.fillRect(obj.orx, obj.ory, obj.width, obj.height);
-        if (obj.type === "sym") {
-          ctx.fillStyle = "#000";
-          ctx.font = `${Math.floor(obj.height * 0.7)}px Arial`;
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          const symbolChar = obj.symbolType === "exc" ? "!" : obj.symbolType === "qm" ? "?" : "?";
-          ctx.fillText(symbolChar, obj.orx + obj.width / 2, obj.ory + obj.height / 2);
-          ctx.textAlign = "start";
-          ctx.textBaseline = "alphabetic";
-        }
-                    if (obj === currentEditObj) {
-      ctx.save();
-      ctx.strokeStyle = 'red';
-      ctx.lineWidth = 5;
-            }
+  const sorted = [...objects].sort((a, b) => a.z - b.z);
+  for (const obj of sorted) {
+    ctx.save();
+    const centerX = obj.orx + obj.width / 1;
+    const centerY = obj.ory + obj.height / 1;
+    ctx.translate(centerX, centerY);
+    ctx.globalAlpha = obj.oc
+    ctx.rotate((obj.rotation || 0) * Math.PI / 180);
+    ctx.translate(-centerX, -centerY);
+
+    if (obj.imgElement) {
+      ctx.drawImage(obj.imgElement, obj.orx, obj.ory, obj.width, obj.height);
+    } else if (obj.type === "txt") {
+      ctx.fillStyle = obj.color;
+      ctx.font = `${obj.height}px ${obj.font}`;
+      ctx.fillText(obj.text, obj.orx, obj.ory + obj.height);
+    } else {
+      ctx.fillStyle = obj.color;
+      ctx.fillRect(obj.orx, obj.ory, obj.width, obj.height);
+
+      if (obj.type === "sym") {
+        ctx.fillStyle = "#000";
+        ctx.font = `${Math.floor(obj.height * 0.7)}px Arial`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const symbolChar = obj.symbolType === "exc" ? "!" : obj.symbolType === "qm" ? "?" : "?";
+        ctx.fillText(symbolChar, obj.orx + obj.width / 2, obj.ory + obj.height / 2);
       }
     }
-    
+
+    if (obj === currentEditObj) {
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 5;
+    ctx.strokeRect(obj.orx, obj.ory, obj.width, obj.height);
+    }
+
+    ctx.restore();
   }
+}
 
 document.getElementById('startRecord').onclick = () => {
   recordedChunks = [];
@@ -446,6 +476,7 @@ document.getElementById('stopRecord').onclick = () => {
       height: 50,
       rotation: 0,
       z: 1,
+      oc: 1,
       img: null,
       imgElement: null,
       orx: 100,
@@ -517,6 +548,7 @@ document.getElementById('stopRecord').onclick = () => {
     editWidth.value = obj.width;
     editHeight.value = obj.height;
     editImgInput.value = "";
+    editOcInput.value = "";
     editPanel.style.display = "block";
   }
 
@@ -549,6 +581,16 @@ const hints = [
       hintIndex = Math.floor(Math.random() * hints.length);
     }, 500);
   }
+editOcInput.addEventListener('input', () => {
+  if (currentEditObj) {
+    const val = parseFloat(editOcInput.value);
+    if (!isNaN(val) && val >= 0 && val <= 1) {
+      currentEditObj.oc = val;
+      drawObjects();
+    }
+  }
+});
+
 
   showNextHint();
   setInterval(showNextHint, 8000);
@@ -628,7 +670,8 @@ canvas.addEventListener("touchcancel", e => {
     if (obj) {
       currentEditObj = obj;
       editRotation.value = obj.rotation || 0;
-      showEditPanel(obj, rect.left + obj.orx, rect.top + obj.ory);
+      
+      showEditPanel(obj, rect.left + obj.orx, rect.top + obj.ory, obj.oc);
     }
   });
   let lastTapTime = 0;
@@ -645,7 +688,7 @@ canvas.addEventListener("touchend", e => {
     if (obj && !animPlaying) {
       currentEditObj = obj;
       editRotation.value = obj.rotation || 0;
-      showEditPanel(obj, rect.left + obj.orx, rect.top + obj.ory);
+      showEditPanel(obj, rect.left + obj.orx, rect.top + obj.ory, obj.oc);
     }
   }
   lastTapTime = currentTime;
@@ -658,7 +701,9 @@ applyEditBtn.addEventListener("click", () => {
 
   editTarget.z = parseInt(editZIndex.value);
   editTarget.width = parseInt(editWidth.value);
-  editTarget.height = parseInt(editHeight.value);
+  editTarget.height = parseInt(editHeight.value) || 0;
+  const ocVal = parseFloat(editOcInput.value);
+  editTarget.oc = (ocVal >= 0 && ocVal <= 1) ? ocVal : editTarget.oc;
   editTarget.rotation = parseFloat(editRotation.value) || 0;
 
   if (editImgInput.files.length > 0) {
@@ -695,7 +740,6 @@ applyEditBtn.addEventListener("click", () => {
     hideEditPanel();
   }
 });
-
 function saveTestFrame() {
   const frameCopy = testObjects.map(obj => ({
     code: obj.code,
@@ -704,19 +748,143 @@ function saveTestFrame() {
     width: obj.width,
     height: obj.height,
     z: obj.z,
+    oc: obj.oc || 1,
     color: obj.color,
     text: obj.text,
     rotation: obj.rotation || 0,
   }));
+  frameCopy.duration = 1000;
 
   frames.push(frameCopy);
-  logToConsole(`Frame ${frames.length} saved.`);
+  console.log(`Frame ${frames.length} saved.`);
+  renderFrameTimeline();
 }
+let selectedFrameIndex = null;
+
+const frameTimeline = document.getElementById("frameTimeline");
+const frameEditor = document.getElementById("frameEditor");
+const frameDurationInput = document.getElementById("frameDurationInput");
+const frameDeleteBtn = document.getElementById("frameDeleteBtn");
+const frameMoveLeftBtn = document.getElementById("frameMoveLeftBtn");
+const frameMoveRightBtn = document.getElementById("frameMoveRightBtn");
+const frameCloseBtn = document.getElementById("frameCloseBtn");
+const saveFrameBtn = document.getElementById("saveFrameBtn");
+
+let animFrameStartTime = null;
+
+function renderFrameTimeline() {
+  frameTimeline.innerHTML = "";
+  frames.forEach((frame, i) => {
+    const frameDiv = document.createElement("div");
+    frameDiv.style.width = "80px";
+    frameDiv.style.height = "60px";
+    frameDiv.style.background = "#777";
+    frameDiv.style.cursor = "pointer";
+    frameDiv.style.display = "flex";
+    frameDiv.style.alignItems = "center";
+    frameDiv.style.justifyContent = "center";
+    frameDiv.style.fontSize = "12px";
+    frameDiv.style.borderRadius = "5px"
+    frameDiv.style.userSelect = "none";
+    frameDiv.style.whiteSpace = "pre-wrap";
+
+    frameDiv.textContent = `Frame ${i + 1}\n${frame.duration || 1000} ms`;
+
+    frameDiv.addEventListener("click", () => openFrameEditor(i, frameDiv));
+
+    frameTimeline.appendChild(frameDiv);
+  });
+}
+
+function openFrameEditor(index, frameDiv) {
+  selectedFrameIndex = index;
+  const rect = frameDiv.getBoundingClientRect();
+
+  frameDurationInput.value = frames[index].duration || 1000;
+
+  frameEditor.style.display = "block";
+  frameEditor.style.left = rect.left + window.scrollX + "px";
+  frameEditor.style.top = rect.bottom + window.scrollY + "px";
+}
+
+frameDurationInput.addEventListener("change", () => {
+  if (selectedFrameIndex === null) return;
+
+  let newDuration = parseInt(frameDurationInput.value);
+  if (isNaN(newDuration) || newDuration < 1) return;
+
+  frames[selectedFrameIndex].duration = newDuration;
+
+  renderFrameTimeline();
+});
+
+frameDeleteBtn.addEventListener("click", () => {
+  if (selectedFrameIndex === null) return;
+  frames.splice(selectedFrameIndex, 1);
+  selectedFrameIndex = null;
+  frameEditor.style.display = "none";
+  renderFrameTimeline();
+});
+
+frameMoveLeftBtn.addEventListener("click", () => {
+  if (selectedFrameIndex === null || selectedFrameIndex === 0) return;
+  [frames[selectedFrameIndex], frames[selectedFrameIndex - 1]] = [frames[selectedFrameIndex - 1], frames[selectedFrameIndex]];
+  selectedFrameIndex--;
+  renderFrameTimeline();
+});
+
+frameMoveRightBtn.addEventListener("click", () => {
+  if (selectedFrameIndex === null || selectedFrameIndex === frames.length - 1) return;
+  [frames[selectedFrameIndex], frames[selectedFrameIndex + 1]] = [frames[selectedFrameIndex + 1], frames[selectedFrameIndex]];
+  selectedFrameIndex++;
+  renderFrameTimeline();
+});
+
+frameCloseBtn.addEventListener("click", () => {
+  selectedFrameIndex = null;
+  frameEditor.style.display = "none";
+});
+
+saveFrameBtn.onclick = () => {
+  if (animPlaying) {
+    logToConsole("Stop animation before saving frames.");
+    return;
+  }
+  const newFrame = deepCopyObjects(testObjects);
+  if (!newFrame.duration) newFrame.duration = 1000;
+  frames.push(newFrame);
+  logToConsole(`Frame saved. Total frames: ${frames.length}`);
+  renderFrameTimeline();
+};
+
+playAnimBtn.onclick = () => {
+  if (frames.length < 2) {
+    logToConsole("Need at least 2 frames to play animation.");
+    return;
+  }
+  animPlaying = true;
+  animFrameIndex = 0;
+  animLerpT = 0;
+  animFrameStartTime = null;
+  playAnimBtn.disabled = true;
+  stopAnimBtn.disabled = false;
+  requestAnimationFrame(animationStep);
+};
+
+stopAnimBtn.onclick = () => {
+  animPlaying = false;
+  playAnimBtn.disabled = false;
+  stopAnimBtn.disabled = true;
+  drawObjects();
+};
 function exportProject() {
   const data = {
     bgColor,
     testObjects: deepCopyObjects(testObjects),
-    frames: frames.map(frame => deepCopyObjects(frame))
+    frames: frames.map(frame => ({
+      duration: frame.duration || 1000,
+      objects: deepCopyObjects(frame)
+    }))
   };
 
   const json = JSON.stringify(data);
@@ -727,7 +895,7 @@ function exportProject() {
   link.href = url;
   link.download = "project.sks";
   link.click();
-logToConsole(data);
+  logToConsole(data);
   URL.revokeObjectURL(url);
 }
 function importProject(event) {
@@ -744,7 +912,11 @@ function importProject(event) {
       data.testObjects.forEach(o => testObjects.push(o));
 
       frames.length = 0;
-      data.frames.forEach(f => frames.push(deepCopyObjects(f)));
+      data.frames.forEach(f => {
+        const frame = deepCopyObjects(f.objects || f);
+        frame.duration = f.duration || 1000;
+        frames.push(frame);
+      });
 
       drawObjects();
       logToConsole("Project loaded successfully.");
@@ -755,70 +927,53 @@ function importProject(event) {
   reader.readAsText(file);
 }
 
-  saveFrameBtn.onclick = () => {
-    if (animPlaying) {
-      logToConsole("Stop animation before saving frames.");
-      return;
+function animationStep(timestamp) {
+  if (!animPlaying) return;
+
+  if (animFrameStartTime === null) animFrameStartTime = timestamp;
+
+  const currentFrame = frames[animFrameIndex];
+  const nextFrame = frames[(animFrameIndex + 1) % frames.length];
+
+  const duration = currentFrame.duration || 1000;
+
+  const progress = Math.min((timestamp - animFrameStartTime) / duration, 1);
+  animLerpT = progress;
+
+  for (const obj of testObjects) {
+    const startObj = findObjByCode(currentFrame, obj.code);
+    const endObj = findObjByCode(nextFrame, obj.code);
+    if (startObj && endObj) {
+      obj.orx = lerp(startObj.orx, endObj.orx, animLerpT);
+      obj.ory = lerp(startObj.ory, endObj.ory, animLerpT);
+      obj.width = lerp(startObj.width, endObj.width, animLerpT);
+      obj.height = lerp(startObj.height, endObj.height, animLerpT);
+      obj.oc = lerp(startObj.oc || 1, endObj.oc || 1, animLerpT);
+      obj.rotation = lerp(startObj.rotation || 0, endObj.rotation || 0, animLerpT);
+      obj.z = lerp(startObj.z, endObj.z, animLerpT);
     }
-    frames.push(deepCopyObjects(testObjects));
-    logToConsole(`Frame saved. Total frames: ${frames.length}`);
-  };
-
-  playAnimBtn.onclick = () => {
-    if (frames.length < 2) {
-      logToConsole("Need at least 2 frames to play animation.");
-      return;
-    }
-    animPlaying = true;
-    animFrameIndex = 0;
-    animLerpT = 0;
-    playAnimBtn.disabled = true;
-    stopAnimBtn.disabled = false;
-    requestAnimationFrame(animationStep);
-  };
-
-  stopAnimBtn.onclick = () => {
-    animPlaying = false;
-    playAnimBtn.disabled = false;
-    stopAnimBtn.disabled = true;
-    drawObjects();
-  };
-
-  function animationStep() {
-    if (!animPlaying) return;
-    const currentFrame = frames[animFrameIndex];
-    const nextFrame = frames[(animFrameIndex + 1) % frames.length];
-
-    for (const obj of testObjects) {
-      const startObj = findObjByCode(currentFrame, obj.code);
-      const endObj = findObjByCode(nextFrame, obj.code);
-      if (startObj && endObj) {
-        obj.orx = lerp(startObj.orx, endObj.orx, animLerpT);
-        obj.ory = lerp(startObj.ory, endObj.ory, animLerpT);
-        obj.width = lerp(startObj.width, endObj.width, animLerpT);
-        obj.height = lerp(startObj.height, endObj.height, animLerpT);
-        obj.rotation = lerp(startObj.rotation || 0, endObj.rotation || 0, animLerpT);
-        obj.z = lerp(startObj.z, endObj.z, animLerpT);
-      }
-    }
-
-    drawObjects();
-
-    animLerpT += animLerpSpeed;
-    if (animLerpT >= 1) {
-      animLerpT = 0;
-      animFrameIndex++;
-if (animFrameIndex >= frames.length - 1) {
-  animFrameIndex = frames.length - 1;
-  animPlaying = false; 
-  playAnimBtn.disabled = false;
-  stopAnimBtn.disabled = true; 
-  logToConsole("Animation finished.");
-}
-    }
-    
-    requestAnimationFrame(animationStep);
   }
+
+  drawObjects();
+
+  if (progress >= 1) {
+    animFrameIndex++;
+    animFrameStartTime = timestamp;
+
+    if (animFrameIndex >= frames.length - 1) {
+      animFrameIndex = frames.length - 1;
+      animPlaying = false;
+      playAnimBtn.disabled = false;
+      stopAnimBtn.disabled = true;
+      logToConsole("Animation finished.");
+      return;
+    }
+  }
+
+  requestAnimationFrame(animationStep);
+}
+renderFrameTimeline();
+
 
   function logToConsole(msg) {
     const consoleLog = document.getElementById("consoleLog");

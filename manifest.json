@@ -3,18 +3,13 @@
   "short_name": "Sketch Studio",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#222",
-  "theme_color": "#222",
+  "background_color": "#222222",
+  "theme_color": "#222222",
   "icons": [
     {
-      "src": "icon.png",
+      "src": "icon.jpg",
       "sizes": "192x192",
-      "type": "image/jpg"
-    }
-    {
-      "src": "icon.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/jpeg"
     }
   ]
 }

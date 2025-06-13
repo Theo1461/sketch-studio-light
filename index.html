@@ -982,23 +982,6 @@ renderFrameTimeline();
   }
 
   drawObjects();
-  function isIOSorIPadOS() {
-      return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-             (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    }
-
-    if (isIOSorIPadOS()) {
-      const link = document.createElement('link');
-      link.rel = 'manifest';
-      link.href = '/manifest.json';
-      document.head.appendChild(link);
-
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/serviceWorker.js')
-            .then(reg => console.log('Service Worker registered:', reg))
-            .catch(err => console.warn('Service Worker failed:', err));
-        });
-      }
-    }
 </script>
+</body>
+</html>

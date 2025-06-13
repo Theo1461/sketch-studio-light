@@ -5,7 +5,7 @@ self.addEventListener('install', e => {
         './',
         './index.html',
         './manifest.json',
-        './icon.jpg',
+        './icon.jpg'
       ]);
     })
   );
@@ -18,3 +18,4 @@ self.addEventListener('fetch', e => {
     })
   );
 });
+

@@ -1,7 +1,7 @@
 {
   "name": "Sketch Studio Light",
   "short_name": "Sketch Studio",
-  "start_url": "./index.html",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#222222",
   "theme_color": "#222222",

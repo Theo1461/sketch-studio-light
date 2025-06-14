@@ -1,21 +1,7 @@
-self.addEventListener('install', e => {
+self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open('v2.31').then(cache => {
-      return cache.addAll([
-        './',
-        './index.html',
-        './manifest.json',
-        './icon.png'
-      ]);
+    caches.open('game-cache').then((cache) => {
+      return cache.addAll(['index.html']);
     })
   );
 });
-
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(response => {
-      return response || fetch(e.request);
-    })
-  );
-});
-

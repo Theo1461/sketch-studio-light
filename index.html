@@ -251,19 +251,20 @@
 
 
 </div>
-
 <div id="version">v2.3</div>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="apple-touch-icon" href="icon.png">
-<link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#222" />
-  <link rel="icon" href="icon.png"/>
-  <script>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#222">
+<link rel="icon" href="icon.png" type="image/png">
+<script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js')
-      .then(reg => console.log('Service Worker registered:', reg.scope))
-      .catch(err => console.error('Service Worker registration failed:', err));
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(reg => console.log('Service Worker registered:', reg.scope))
+        .catch(err => console.error('Service Worker registration failed:', err));
+    });
   }
   let selectedIndex = -1;
 

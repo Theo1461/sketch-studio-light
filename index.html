@@ -267,9 +267,23 @@
     });
   }
   let selectedIndex = -1;
-
-  const canvas = document.getElementById("canvas");
+function upgradeCanvasQuality(canvas) {
   const ctx = canvas.getContext("2d");
+  const dpr = 3;
+  const cssWidth = canvas.clientWidth;
+  const cssHeight = canvas.clientHeight;
+  canvas.width = cssWidth * dpr;
+  canvas.height = cssHeight * dpr;
+  canvas.style.width = cssWidth + "px";
+  canvas.style.height = cssHeight + "px";
+  ctx.scale(dpr, dpr);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
+  return ctx;
+}
+  const canvas = document.getElementById("canvas");
+  const ctx = upgradeCanvasQuality(canvas);
   const editPanel = document.getElementById("editPanel");
   const editZIndex = document.getElementById("editZIndex");
   const editWidth = document.getElementById("editWidth");

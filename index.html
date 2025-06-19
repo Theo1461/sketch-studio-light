@@ -283,7 +283,7 @@ function upgradeCanvasQuality(canvas) {
   return ctx;
 }
   const canvas = document.getElementById("canvas");
-  const ctx = upgradeCanvasQuality(canvas);
+  const ctx = canvas.getContext("2d");
   const editPanel = document.getElementById("editPanel");
   const editZIndex = document.getElementById("editZIndex");
   const editWidth = document.getElementById("editWidth");

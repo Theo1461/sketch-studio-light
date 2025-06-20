@@ -623,8 +623,8 @@ function findObjectAt(x, y) {
     const rx = dx * Math.cos(angle) - dy * Math.sin(angle);
     const ry = dx * Math.sin(angle) + dy * Math.cos(angle);
 
-    const localX = rx + obj.width;
-    const localY = ry + obj.height;
+    const localX = rx + obj.width / 2;
+    const localY = ry + obj.height / 2;
 
     if (localX >= 0 && localX <= obj.width && localY >= 0 && localY <= obj.height) {
       return obj;

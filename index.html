@@ -245,6 +245,7 @@
   <label><input type="number" step="0.01" min="0" max="1" id="editOcInput"> Opacity</label>
   <input type="file" id="fileInput" accept="image/*" style="display: none;">
   <button id="editImgInput" style="background-color: #444; color: white;">Edit Source Image</button>
+
   <button id="applyEdit">Apply</button>
   <button id="cancelEdit" onclick="hideEditPanel()">Cancel</button>
 </div>
@@ -273,6 +274,9 @@
     });
   }
   let selectedIndex = -1;
+  const fileInput = document.getElementById('fileInput');
+const editImgButton = document.getElementById('editImgInput');
+
 function upgradeCanvasQuality(canvas) {
   const ctx = canvas.getContext("2d");
   const dpr = 3;
@@ -628,13 +632,6 @@ function findObjectAt(x, y) {
     editPanel.style.display = "none";
     currentEditObj = null;
   }
-const fileInput = document.getElementById('fileInput');
-const editImgButton = document.getElementById('editImgInput');
-
-editImgButton.addEventListener('click', () => {
-  fileInput.click();
-});
-
 fileInput.addEventListener('change', () => {
   if (!currentEditObj) return;
 
@@ -695,6 +692,7 @@ const hints = [
       hintIndex = Math.floor(Math.random() * hints.length);
     }, 500);
   }
+  
 editOcInput.addEventListener('input', () => {
   if (currentEditObj) {
     const val = parseFloat(editOcInput.value);
@@ -873,42 +871,49 @@ applyEditBtn.addEventListener("click", () => {
   const ocVal = parseFloat(editOcInput.value);
   editTarget.oc = (ocVal >= 0 && ocVal <= 1) ? ocVal : editTarget.oc;
   editTarget.rotation = parseFloat(editRotation.value) || 0;
-if (fileInput.files.length > 0) {
-  const file = fileInput.files[0];
-  const reader = new FileReader();
-
-  reader.onload = e => {
-    const img = new Image();
-
-    img.onload = () => {
-      const stillExists = testObjects.includes(editTarget);
-      if (!stillExists) {
-        logToConsole("Image loaded, but object was no longer active.");
-        return;
-      }
-
-      editTarget.imgElement = img;
-      editTarget.img = e.target.result;
-      drawObjects();
-      logToConsole(`Image replaced for ${editTarget.code}`);
-      hideEditPanel();
-      fileInput.value = '';
-    };
-
-    img.onerror = () => {
-      logToConsole("Failed to load the selected image.");
-    };
-
-    img.src = e.target.result;
-  };
-
-  reader.readAsDataURL(file);
-} else {
-  drawObjects();
-  hideEditPanel();
-}
 
 });
+
+editImgButton.addEventListener('click', () => {
+  fileInput.click();
+});
+
+fileInput.addEventListener('change', () => {
+  if (!currentEditObj) return;
+
+  if (fileInput.files.length > 0) {
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = e => {
+      const img = new Image();
+
+      img.onload = () => {
+        const stillExists = testObjects.includes(currentEditObj);
+        if (!stillExists) {
+          logToConsole("Image loaded, but object was no longer active.");
+          return;
+        }
+
+        currentEditObj.imgElement = img;
+        currentEditObj.img = e.target.result;
+        drawObjects();
+        logToConsole(`Image replaced for ${currentEditObj.code}`);
+        hideEditPanel();
+        fileInput.value = '';
+      };
+
+      img.onerror = () => {
+        logToConsole("Failed to load the selected image.");
+      };
+
+      img.src = e.target.result;
+    };
+
+    reader.readAsDataURL(file);
+  }
+});
+
 function saveTestFrame() {
   const frameCopy = testObjects.map(obj => ({
     code: obj.code,
@@ -1001,7 +1006,7 @@ function resizeObject(obj, handle, x, y) {
     }
   }
 }
-y
+
 
 let selectedFrameIndex = null;
 

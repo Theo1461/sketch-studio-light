@@ -1228,7 +1228,54 @@ renderFrameTimeline();
     consoleLog.textContent += msg + "\n";
     consoleLog.scrollTop = consoleLog.scrollHeight;
   }
+function teleportObjectTo(obj, x, y) {
+  obj.orx = x - obj.width;
+  obj.ory = y - obj.height;
+  drawObjects();
+}
+canvas.addEventListener("mousemove", e => {
+  const rect = canvas.getBoundingClientRect();
+  lastKnownPointer = {
+    x: e.clientX - rect.left,
+    y: e.clientY - rect.top
+  };
+});
 
+canvas.addEventListener("touchmove", e => {
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  lastKnownPointer = {
+    x: touch.clientX - rect.left,
+    y: touch.clientY - rect.top
+  };
+}, { passive: false });
+document.addEventListener("keydown", e => {
+  if (e.key === "2" && draggingObj && lastKnownPointer) {
+    teleportObjectTo(draggingObj, lastKnownPointer.x, lastKnownPointer.y);
+  }
+});
+let lastTouchTime = 0;
+canvas.addEventListener("touchend", e => {
+  const now = Date.now();
+  if (e.touches.length === 0 && e.changedTouches.length === 2) {
+    const t1 = e.changedTouches[0];
+    const t2 = e.changedTouches[1];
+    const rect = canvas.getBoundingClientRect();
+
+    const x1 = t1.clientX - rect.left;
+    const y1 = t1.clientY - rect.top;
+    const x2 = t2.clientX - rect.left;
+    const y2 = t2.clientY - rect.top;
+
+    const midX = (x1 + x2) / 2;
+    const midY = (y1 + y2) / 2;
+
+    if (now - lastTouchTime < 300) {
+      if (draggingObj) teleportObjectTo(draggingObj, midX, midY);
+    }
+    lastTouchTime = now;
+  }
+}, { passive: false });
   drawObjects();
 </script>
 </body>

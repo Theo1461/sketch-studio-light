@@ -245,8 +245,7 @@
   <label><input type="number" step="0.01" min="0" max="1" id="editOcInput"> Opacity</label>
   <input type="file" id="fileInput" accept="image/*" style="display: none;">
   <button id="editImgInput" style="background-color: #444; color: white;">Edit Source Image</button>
-
-  <button id="applyEdit">Apply</button>
+  <button id="applyEdit" type="button">Apply</button>
   <button id="cancelEdit" onclick="hideEditPanel()">Cancel</button>
 </div>
 <div id="frameTimeline" style="display:flex; gap:8px; overflow-x:auto; padding:10px; border:1px solid #808080; border-radius: 5px;"></div>
@@ -266,6 +265,25 @@
 </div>
 <div id="version">v2.3</div>
 <script>
+  document.addEventListener("DOMContentLoaded", () => {
+  const applyEditBtn = document.getElementById("applyEdit");
+
+  applyEditBtn.addEventListener("click", () => {
+    if (!currentEditObj) return;
+
+    const editTarget = currentEditObj;
+
+    editTarget.z = parseInt(editZIndex.value);
+    editTarget.width = parseInt(editWidth.value);
+    editTarget.height = parseInt(editHeight.value) || 0;
+    const ocVal = parseFloat(editOcInput.value);
+    editTarget.oc = (ocVal >= 0 && ocVal <= 1) ? ocVal : editTarget.oc;
+    editTarget.rotation = parseFloat(editRotation.value) || 0;
+    drawObjects();
+    hideEditPanel()
+  });
+});
+
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/service-worker.js')
@@ -301,7 +319,6 @@ function upgradeCanvasQuality(canvas) {
   const editImgInput = document.getElementById("editImgInput");
   const editOcInput = document.getElementById('editOcInput');
   const editImgInputBtn = document.getElementById('editImgInput');
-  const applyEditBtn = document.getElementById("applyEdit");
   const cancelEditBtn = document.getElementById("cancelEdit");
 
   const addShapeBtn = document.getElementById("addShapeBtn");
@@ -859,19 +876,6 @@ canvas.addEventListener("touchend", e => {
   }
   lastTapTime = currentTime;
   draggingObj = null;
-});
-applyEditBtn.addEventListener("click", () => {
-  if (!currentEditObj) return;
-
-  const editTarget = currentEditObj;
-
-  editTarget.z = parseInt(editZIndex.value);
-  editTarget.width = parseInt(editWidth.value);
-  editTarget.height = parseInt(editHeight.value) || 0;
-  const ocVal = parseFloat(editOcInput.value);
-  editTarget.oc = (ocVal >= 0 && ocVal <= 1) ? ocVal : editTarget.oc;
-  editTarget.rotation = parseFloat(editRotation.value) || 0;
-
 });
 
 editImgButton.addEventListener('click', () => {

@@ -136,7 +136,7 @@
     border-radius: 5px;
     display: none;
     z-index: 1000;
-    font-size: 14px;
+    font-size: 10px;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.6);
   }
 
@@ -196,29 +196,34 @@
     z-index: 10000000000000000000000000000000000000000000000000000000000000;
     pointer-events: none;
   }
+  .editPanel label {
+    display: flex;
+    align-items: left;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
 </style>
 </head>
 <body>
 <div id="hintBox"></div>
 <a id="downloadLink" style="position: fixed; top: 5px; left:45%; align-items: center; display:none;"></a>
-<h4>Sketch Studio Light</h4>
-
 <div id="container">
 
   <div class="side-panel">
     <pre id="consoleLog"></pre>
     <button onclick="exportProject()">Export .sks</button>
-    <input type="file" accept=".sks" onchange="importProject(event)">
-
+    <input type="file" accept=".sks" id="import" style="display: none" onchange="importProject(event)">
+    <button onclick="document.getElementById('import').click()">Import Project</button>
     <button onclick="testAddShape()">Add Square</button>
-    <button onclick="testAddText()">Add Text</button>
-    <button onclick="testAddSymbol()">Add Symbol</button>
+    <button style="display: none;" onclick="testAddText()">Add Text</button>
+    <button style="display: none;" onclick="testAddSymbol()">Add Symbol</button>
     <button id="saveFrameBtn" onclick="saveTestFrame()">Save Frame</button>
 
   </div>
 
   <div id="canvas-container">
-    <canvas id="canvas" width="400" height="400"></canvas>
+    <canvas id="canvas" width="1000" height="1000"></canvas>
     <div id="frames"></div>
   </div>
 
@@ -233,12 +238,13 @@
     <button id="stopRecord" disabled>▧ (Stop Rec)</button>
     <button onclick="c()">⟳ Cycle</button>
     <div id="editPanel">
-  <label>Layer: <input type="number" id="editZIndex"></label>
-  <label>Length: <input type="number" id="editWidth"></label>
-  <label>Height: <input type="number" id="editHeight"></label>
-  <label>Rotation (°): <input type="number" id="editRotation" value="0"></label>
-  <input id="editOcInput" type="number" step="0.01" min="0" max="1">
-  <label>Image: <input type="file" id="editImgInput" accept="image/*"></label>
+  <label><input type="number" id="editZIndex"> Layer</label>
+  <label><input type="number" id="editWidth"> Length</label>
+  <label><input type="number" id="editHeight"> Height</label>
+  <label><input type="number" id="editRotation" value="0"> Rotation (°)</label>
+  <label><input type="number" step="0.01" min="0" max="1" id="editOcInput"> Opacity</label>
+  <input type="file" id="editImgInput" accept="image/*" style="display: none;">
+  <button id="editImgInput" style="background-color: #444; color: white;">Edit Source Image</button>
   <button id="applyEdit">Apply</button>
   <button id="cancelEdit" onclick="hideEditPanel()">Cancel</button>
 </div>
@@ -305,9 +311,13 @@ function upgradeCanvasQuality(canvas) {
   let bgImage = null;
 
   let draggingObj = null;
-  let dragOffsetX = 0;
-  let dragOffsetY = 0;
+  let dragOffsetX = 10;
+  let dragOffsetY = 10;
   let currentEditObj = null;
+  let holdTimer = null;
+  let holdTriggered = false;
+  const HOLD_DURATION = 100;
+  const HANDLE_RADIUS = 100;
 
   const frames = []; 
   let animPlaying = false;
@@ -356,6 +366,7 @@ window.addEventListener('keydown', e => {
     drawObjects();
   }
 });
+let resizingHandle = null;
 
   function deepCopyObjects(objs) {
     return objs.map(o => ({
@@ -389,7 +400,7 @@ function drawObjects(objects = testObjects) {
   ctx.save();
   ctx.globalAlpha = 1;
   if (bgImage) {
-    ctx.drawImage(bgImage, 0, 0, 400, 400);
+    ctx.drawImage(bgImage, 0, 0, 1000, 1000);
   } else {
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -430,11 +441,40 @@ function drawObjects(objects = testObjects) {
     ctx.strokeStyle = 'red';
     ctx.lineWidth = 5;
     ctx.strokeRect(obj.orx, obj.ory, obj.width, obj.height);
-    }
+    const size = 20;
+    const half = size / 2;
+    const x = obj.orx;
+    const y = obj.ory;
+    const w = obj.width;
+    const h = obj.height;
 
-    ctx.restore();
+if (obj === currentEditObj) {
+  const points = [
+    [x, y],
+    [x + w / 2, y],
+    [x + w, y],
+    [x + w, y + h / 2],
+    [x + w, y + h],
+    [x + w / 2, y + h],
+    [x, y + h],
+    [x, y + h / 2]
+  ];
+
+  ctx.fillStyle = "white";
+  ctx.strokeStyle = "black";
+
+  for (const [px, py] of points) {
+    ctx.beginPath();
+    ctx.rect(px - half, py - half, size, size);
+    ctx.fill();
+    ctx.stroke();
   }
 }
+
+ctx.restore();
+    }
+}}
+
 
 document.getElementById('startRecord').onclick = () => {
   recordedChunks = [];
@@ -492,8 +532,8 @@ document.getElementById('stopRecord').onclick = () => {
       code: generateCode(),
       type: "cls",
       color: randomColor(),
-      width: 50,
-      height: 50,
+      width: 300,
+      height: 300,
       rotation: 0,
       z: 1,
       oc: 1,
@@ -513,8 +553,8 @@ document.getElementById('stopRecord').onclick = () => {
       type: "txt",
       color: randomColor(),
       font: "Arial",
-      width: 100,
-      height: 30,
+      width: 300,
+      height: 300,
       z: 2,
       rotation: 0,
       img: null,
@@ -534,8 +574,8 @@ document.getElementById('stopRecord').onclick = () => {
       type: "sym",
       color: randomColor(),
       symbolType: "exc",
-      width: 30,
-      height: 30,
+      width: 300,
+      height: 300,
       z: 3,
       img: null,
       imgElement: null,
@@ -548,18 +588,29 @@ document.getElementById('stopRecord').onclick = () => {
     drawObjects();
   }
 
-  function findObjectAt(x, y) {
-    const sorted = [...testObjects].sort((a, b) => b.z - a.z);
-    for (const obj of sorted) {
-      if (
-        x >= obj.orx && x <= obj.orx + obj.width &&
-        y >= obj.ory && y <= obj.ory + obj.height
-      ) {
-        return obj;
-      }
+function findObjectAt(x, y) {
+  for (let i = testObjects.length - 1; i >= 0; i--) {
+    const obj = testObjects[i];
+
+    const cx = obj.orx + obj.width / 2;
+    const cy = obj.ory + obj.height / 2;
+    const angle = -(obj.rotation || 0) * Math.PI / 180;
+
+    const dx = x - cx;
+    const dy = y - cy;
+
+    const rx = dx * Math.cos(angle) - dy * Math.sin(angle);
+    const ry = dx * Math.sin(angle) + dy * Math.cos(angle);
+
+    const localX = rx + obj.width;
+    const localY = ry + obj.height;
+
+    if (localX >= 0 && localX <= obj.width && localY >= 0 && localY <= obj.height) {
+      return obj;
     }
-    return null;
   }
+  return null;
+}
 
   function showEditPanel(obj, left, top) {
     editPanel.style.left = left + "px";
@@ -614,72 +665,126 @@ editOcInput.addEventListener('input', () => {
 
   showNextHint();
   setInterval(showNextHint, 8000);
-  canvas.addEventListener("mousedown", e => {
-    if (animPlaying) return;
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const obj = findObjectAt(mouseX, mouseY);
-    if (obj) {
-      draggingObj = obj;
-      dragOffsetX = mouseX - obj.orx;
-      dragOffsetY = mouseY - obj.ory;
-      hideEditPanel();
+function getHandleUnderPoint(obj, x, y) {
+  const handles = {
+    tl: [obj.orx, obj.ory],
+    tr: [obj.orx + obj.width, obj.ory],
+    bl: [obj.orx, obj.ory + obj.height],
+    br: [obj.orx + obj.width, obj.ory + obj.height],
+    tc: [obj.orx + obj.width / 2, obj.ory],
+    bc: [obj.orx + obj.width / 2, obj.ory + obj.height],
+    ml: [obj.orx, obj.ory + obj.height / 2],
+    mr: [obj.orx + obj.width, obj.ory + obj.height / 2]
+  };
+
+  for (const [key, [hx, hy]] of Object.entries(handles)) {
+    const dx = x - hx;
+    const dy = y - hy;
+    if (Math.sqrt(dx * dx + dy * dy) <= HANDLE_RADIUS) {
+      return key;
     }
-  });
+  }
 
-  canvas.addEventListener("mousemove", e => {
-    if (!draggingObj) return;
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    draggingObj.orx = mouseX - dragOffsetX;
-    draggingObj.ory = mouseY - dragOffsetY;
-    drawObjects();
-  });
-
-  canvas.addEventListener("mouseup", e => {
-    draggingObj = null;
-  });
-
-  canvas.addEventListener("mouseleave", e => {
-    draggingObj = null;
-  });
+  return null;
+}
+canvas.addEventListener("mousedown", e => {
+  if (animPlaying) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  const obj = findObjectAt(x, y);
+  if (obj) {
+    draggingObj = obj;
+    dragOffsetX = x - obj.orx;
+    dragOffsetY = y - obj.ory;
+    holdTriggered = false;
+    holdTimer = setTimeout(() => {
+      if (obj === currentEditObj) {
+        const handle = getHandleUnderPoint(obj, x, y);
+        if (handle) {
+          resizingHandle = handle;
+          holdTriggered = true;
+        }
+      }
+    }, HOLD_DURATION);
+    hideEditPanel();
+  }
+});
+canvas.addEventListener("mousemove", e => {
+  if (!draggingObj) return;
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  if (resizingHandle) {
+    resizeObject(draggingObj, resizingHandle, x, y);
+  } else if (!holdTriggered) {
+    draggingObj.orx = x - dragOffsetX;
+    draggingObj.ory = y - dragOffsetY;
+  }
+  drawObjects();
+});
+canvas.addEventListener("mouseup", () => {
+  draggingObj = null;
+  resizingHandle = null;
+  clearTimeout(holdTimer);
+});
+canvas.addEventListener("mouseleave", () => {
+  draggingObj = null;
+  resizingHandle = null;
+  clearTimeout(holdTimer);
+});
 canvas.addEventListener("touchstart", e => {
   if (animPlaying) return;
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
-  const touchX = touch.clientX - rect.left;
-  const touchY = touch.clientY - rect.top;
-  const obj = findObjectAt(touchX, touchY);
+  const x = touch.clientX - rect.left;
+  const y = touch.clientY - rect.top;
+  const obj = findObjectAt(x, y);
   if (obj) {
     draggingObj = obj;
-    dragOffsetX = touchX - obj.orx;
-    dragOffsetY = touchY - obj.ory;
+    dragOffsetX = x - obj.orx;
+    dragOffsetY = y - obj.ory;
+    holdTriggered = false;
+    holdTimer = setTimeout(() => {
+      if (obj === currentEditObj) {
+        const handle = getHandleUnderPoint(obj, x, y);
+        if (handle) {
+          resizingHandle = handle;
+          holdTriggered = true;
+        }
+      }
+    }, HOLD_DURATION);
     hideEditPanel();
     e.preventDefault();
   }
 }, { passive: false });
-
 canvas.addEventListener("touchmove", e => {
   if (!draggingObj) return;
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
-  const touchX = touch.clientX - rect.left;
-  const touchY = touch.clientY - rect.top;
-  draggingObj.orx = touchX - dragOffsetX;
-  draggingObj.ory = touchY - dragOffsetY;
+  const x = touch.clientX - rect.left;
+  const y = touch.clientY - rect.top;
+  if (resizingHandle) {
+    resizeObject(draggingObj, resizingHandle, x, y);
+  } else if (!holdTriggered) {
+    draggingObj.orx = x - dragOffsetX;
+    draggingObj.ory = y - dragOffsetY;
+  }
   drawObjects();
   e.preventDefault();
 }, { passive: false });
-
-canvas.addEventListener("touchend", e => {
+canvas.addEventListener("touchend", () => {
   draggingObj = null;
+  resizingHandle = null;
+  clearTimeout(holdTimer);
 });
 
-canvas.addEventListener("touchcancel", e => {
+canvas.addEventListener("touchcancel", () => {
   draggingObj = null;
+  resizingHandle = null;
+  clearTimeout(holdTimer);
 });
+
 
   canvas.addEventListener("dblclick", e => {
     if (animPlaying) return;
@@ -779,6 +884,81 @@ function saveTestFrame() {
   console.log(`Frame ${frames.length} saved.`);
   renderFrameTimeline();
 }
+function resizeObject(obj, handle, x, y) {
+  const min = 10;
+  if (!obj) return;
+
+  switch (handle) {
+    case "tl": {
+      const newWidth = obj.width + (obj.orx - x);
+      const newHeight = obj.height + (obj.ory - y);
+      if (newWidth >= min) {
+        obj.orx = x;
+        obj.width = newWidth;
+      }
+      if (newHeight >= min) {
+        obj.ory = y;
+        obj.height = newHeight;
+      }
+      break;
+    }
+    case "tr": {
+      const newWidth = x - obj.orx;
+      const newHeight = obj.height + (obj.ory - y);
+      if (newWidth >= min) obj.width = newWidth;
+      if (newHeight >= min) {
+        obj.ory = y;
+        obj.height = newHeight;
+      }
+      break;
+    }
+    case "bl": {
+      const newWidth = obj.width + (obj.orx - x);
+      const newHeight = y - obj.ory;
+      if (newWidth >= min) {
+        obj.orx = x;
+        obj.width = newWidth;
+      }
+      if (newHeight >= min) obj.height = newHeight;
+      break;
+    }
+    case "br": {
+      const newWidth = x - obj.orx;
+      const newHeight = y - obj.ory;
+      if (newWidth >= min) obj.width = newWidth;
+      if (newHeight >= min) obj.height = newHeight;
+      break;
+    }
+    case "tc": {
+      const newHeight = obj.height + (obj.ory - y);
+      if (newHeight >= min) {
+        obj.ory = y;
+        obj.height = newHeight;
+      }
+      break;
+    }
+    case "bc": {
+      const newHeight = y - obj.ory;
+      if (newHeight >= min) obj.height = newHeight;
+      break;
+    }
+    case "ml": {
+      const newWidth = obj.width + (obj.orx - x);
+      if (newWidth >= min) {
+        obj.orx = x;
+        obj.width = newWidth;
+      }
+      break;
+    }
+    case "mr": {
+      const newWidth = x - obj.orx;
+      if (newWidth >= min) obj.width = newWidth;
+      break;
+    }
+  }
+}
+y
+
 let selectedFrameIndex = null;
 
 const frameTimeline = document.getElementById("frameTimeline");

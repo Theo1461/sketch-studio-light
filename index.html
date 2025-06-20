@@ -610,28 +610,23 @@ document.getElementById('stopRecord').onclick = () => {
   }
 
 function findObjectAt(x, y) {
+  const RADIUS = 300;
   for (let i = testObjects.length - 1; i >= 0; i--) {
     const obj = testObjects[i];
-
     const cx = obj.orx + obj.width / 2;
     const cy = obj.ory + obj.height / 2;
-    const angle = -(obj.rotation || 0) * Math.PI / 180;
 
     const dx = x - cx;
     const dy = y - cy;
+    const distSq = dx * dx + dy * dy;
 
-    const rx = dx * Math.cos(angle) - dy * Math.sin(angle);
-    const ry = dx * Math.sin(angle) + dy * Math.cos(angle);
-
-    const localX = rx + obj.width / 2;
-    const localY = ry + obj.height / 2;
-
-    if (localX >= 0 && localX <= obj.width && localY >= 0 && localY <= obj.height) {
+    if (distSq <= RADIUS * RADIUS) {
       return obj;
     }
   }
   return null;
 }
+
 
 
   function showEditPanel(obj, left, top) {

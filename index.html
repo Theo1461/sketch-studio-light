@@ -243,7 +243,7 @@
   <label><input type="number" id="editHeight"> Height</label>
   <label><input type="number" id="editRotation" value="0"> Rotation (°)</label>
   <label><input type="number" step="0.01" min="0" max="1" id="editOcInput"> Opacity</label>
-  <input type="file" id="editImgInput" accept="image/*" style="display: none;">
+  <input type="file" id="fileInput" accept="image/*" style="display: none;">
   <button id="editImgInput" style="background-color: #444; color: white;">Edit Source Image</button>
   <button id="applyEdit">Apply</button>
   <button id="cancelEdit" onclick="hideEditPanel()">Cancel</button>
@@ -296,7 +296,7 @@ function upgradeCanvasQuality(canvas) {
   const editHeight = document.getElementById("editHeight");
   const editImgInput = document.getElementById("editImgInput");
   const editOcInput = document.getElementById('editOcInput');
-
+  const editImgInputBtn = document.getElementById('editImgInput');
   const applyEditBtn = document.getElementById("applyEdit");
   const cancelEditBtn = document.getElementById("cancelEdit");
 
@@ -612,6 +612,7 @@ function findObjectAt(x, y) {
   return null;
 }
 
+
   function showEditPanel(obj, left, top) {
     editPanel.style.left = left + "px";
     editPanel.style.top = top + "px";
@@ -627,6 +628,48 @@ function findObjectAt(x, y) {
     editPanel.style.display = "none";
     currentEditObj = null;
   }
+const fileInput = document.getElementById('fileInput');
+const editImgButton = document.getElementById('editImgInput');
+
+editImgButton.addEventListener('click', () => {
+  fileInput.click();
+});
+
+fileInput.addEventListener('change', () => {
+  if (!currentEditObj) return;
+
+  if (fileInput.files.length > 0) {
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = e => {
+      const img = new Image();
+
+      img.onload = () => {
+        const stillExists = testObjects.includes(currentEditObj);
+        if (!stillExists) {
+          logToConsole("Image loaded, but object was no longer active.");
+          return;
+        }
+
+        currentEditObj.imgElement = img;
+        currentEditObj.img = e.target.result;
+        drawObjects();
+        logToConsole(`Image replaced for ${currentEditObj.code}`);
+        hideEditPanel();
+        fileInput.value = '';
+      };
+
+      img.onerror = () => {
+        logToConsole("Failed to load the selected image.");
+      };
+
+      img.src = e.target.result;
+    };
+
+    reader.readAsDataURL(file);
+  }
+});
 
 const hints = [
     "Did you know you can export projects?",
@@ -830,40 +873,41 @@ applyEditBtn.addEventListener("click", () => {
   const ocVal = parseFloat(editOcInput.value);
   editTarget.oc = (ocVal >= 0 && ocVal <= 1) ? ocVal : editTarget.oc;
   editTarget.rotation = parseFloat(editRotation.value) || 0;
+if (fileInput.files.length > 0) {
+  const file = fileInput.files[0];
+  const reader = new FileReader();
 
-  if (editImgInput.files.length > 0) {
-    const file = editImgInput.files[0];
-    const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
 
-    reader.onload = e => {
-      const img = new Image();
+    img.onload = () => {
+      const stillExists = testObjects.includes(editTarget);
+      if (!stillExists) {
+        logToConsole("Image loaded, but object was no longer active.");
+        return;
+      }
 
-      img.onload = () => {
-        const stillExists = testObjects.includes(editTarget);
-        if (!stillExists) {
-          logToConsole("Image loaded, but object was no longer active.");
-          return;
-        }
-
-        editTarget.imgElement = img;
-        editTarget.img = e.target.result;
-        drawObjects();
-        logToConsole(`Image replaced for ${editTarget.code}`);
-        hideEditPanel();
-      };
-
-      img.onerror = () => {
-        logToConsole("Failed to load the selected image.");
-      };
-
-      img.src = e.target.result;
+      editTarget.imgElement = img;
+      editTarget.img = e.target.result;
+      drawObjects();
+      logToConsole(`Image replaced for ${editTarget.code}`);
+      hideEditPanel();
+      fileInput.value = '';
     };
 
-    reader.readAsDataURL(file);
-  } else {
-    drawObjects();
-    hideEditPanel();
-  }
+    img.onerror = () => {
+      logToConsole("Failed to load the selected image.");
+    };
+
+    img.src = e.target.result;
+  };
+
+  reader.readAsDataURL(file);
+} else {
+  drawObjects();
+  hideEditPanel();
+}
+
 });
 function saveTestFrame() {
   const frameCopy = testObjects.map(obj => ({

@@ -638,8 +638,8 @@ function findObjectAt(x, y) {
 
 
   function showEditPanel(obj, left, top) {
-    editPanel.style.left = left + "px";
-    editPanel.style.top = top + "px";
+    editPanel.style.left = 100 + "px";
+    editPanel.style.top = 100 + "px";
     editZIndex.value = obj.z;
     editWidth.value = obj.width;
     editHeight.value = obj.height;
@@ -748,105 +748,73 @@ function getHandleUnderPoint(obj, x, y) {
 
   return null;
 }
-canvas.addEventListener("mousedown", e => {
-  if (animPlaying) return;
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  const obj = findObjectAt(x, y);
-  if (obj) {
-    draggingObj = obj;
-    dragOffsetX = x - obj.orx;
-    dragOffsetY = y - obj.ory;
-    holdTriggered = false;
-    holdTimer = setTimeout(() => {
-      if (obj === currentEditObj) {
-        const handle = getHandleUnderPoint(obj, x, y);
-        if (handle) {
-          resizingHandle = handle;
-          holdTriggered = true;
-        }
-      }
-    }, HOLD_DURATION);
-    hideEditPanel();
-  }
-});
-canvas.addEventListener("mousemove", e => {
-  if (!draggingObj) return;
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  if (resizingHandle) {
-    resizeObject(draggingObj, resizingHandle, x, y);
-  } else if (!holdTriggered) {
-    draggingObj.orx = x - dragOffsetX;
-    draggingObj.ory = y - dragOffsetY;
-  }
-  drawObjects();
-});
-canvas.addEventListener("mouseup", () => {
-  draggingObj = null;
-  resizingHandle = null;
-  clearTimeout(holdTimer);
-});
-canvas.addEventListener("mouseleave", () => {
-  draggingObj = null;
-  resizingHandle = null;
-  clearTimeout(holdTimer);
-});
+
+  canvas.addEventListener("mousedown", e => {
+    if (animPlaying) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const obj = findObjectAt(mouseX, mouseY);
+    if (obj) {
+      draggingObj = obj;
+      dragOffsetX = mouseX - obj.orx;
+      dragOffsetY = mouseY - obj.ory;
+      hideEditPanel();
+    }
+  });
+
+  canvas.addEventListener("mousemove", e => {
+    if (!draggingObj) return;
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    draggingObj.orx = mouseX - dragOffsetX;
+    draggingObj.ory = mouseY - dragOffsetY;
+    drawObjects();
+  });
+
+  canvas.addEventListener("mouseup", e => {
+    draggingObj = null;
+  });
+
+  canvas.addEventListener("mouseleave", e => {
+    draggingObj = null;
+  });
 canvas.addEventListener("touchstart", e => {
   if (animPlaying) return;
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
-  const x = touch.clientX - rect.left;
-  const y = touch.clientY - rect.top;
-  const obj = findObjectAt(x, y);
+  const touchX = touch.clientX - rect.left;
+  const touchY = touch.clientY - rect.top;
+  const obj = findObjectAt(touchX, touchY);
   if (obj) {
     draggingObj = obj;
-    dragOffsetX = x - obj.orx;
-    dragOffsetY = y - obj.ory;
-    holdTriggered = false;
-    holdTimer = setTimeout(() => {
-      if (obj === currentEditObj) {
-        const handle = getHandleUnderPoint(obj, x, y);
-        if (handle) {
-          resizingHandle = handle;
-          holdTriggered = true;
-        }
-      }
-    }, HOLD_DURATION);
+    dragOffsetX = touchX - obj.orx;
+    dragOffsetY = touchY - obj.ory;
     hideEditPanel();
     e.preventDefault();
   }
 }, { passive: false });
+
 canvas.addEventListener("touchmove", e => {
   if (!draggingObj) return;
   const rect = canvas.getBoundingClientRect();
   const touch = e.touches[0];
-  const x = touch.clientX - rect.left;
-  const y = touch.clientY - rect.top;
-  if (resizingHandle) {
-    resizeObject(draggingObj, resizingHandle, x, y);
-  } else if (!holdTriggered) {
-    draggingObj.orx = x - dragOffsetX;
-    draggingObj.ory = y - dragOffsetY;
-  }
+  const touchX = touch.clientX - rect.left;
+  const touchY = touch.clientY - rect.top;
+  draggingObj.orx = touchX - dragOffsetX;
+  draggingObj.ory = touchY - dragOffsetY;
   drawObjects();
   e.preventDefault();
 }, { passive: false });
-canvas.addEventListener("touchend", () => {
+
+canvas.addEventListener("touchend", e => {
   draggingObj = null;
-  resizingHandle = null;
-  clearTimeout(holdTimer);
 });
 
-canvas.addEventListener("touchcancel", () => {
+canvas.addEventListener("touchcancel", e => {
   draggingObj = null;
-  resizingHandle = null;
-  clearTimeout(holdTimer);
 });
-
-
   canvas.addEventListener("dblclick", e => {
     if (animPlaying) return;
     const rect = canvas.getBoundingClientRect();
